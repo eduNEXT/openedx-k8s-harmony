@@ -88,7 +88,67 @@ still present in your cluster.
 2. **Enable the pod-autoscaling plugin per environment**: the
 [pod-autoscaling plugin](https://github.com/eduNEXT/tutor-contrib-pod-autoscaling) enables the implementation of HPA and
 VPA to start scaling an installation workloads. Variables for the plugin configuration are documented there.
+#### Karpenter installation in EKS Cluster.
+> Prerequisites:  aws accound id
 
+1. Clone the repository, navigate to `./infra-examples/aws` and create the `VPC` resources first, followed by the`k8s-cluster` resources. Make sure to have the AWS account ID available, and then execute the following commands:
+   ```
+   terraform init
+   terraform plan
+   terrafrom apply -auto-approve
+   ```
+2. Once the `k8s-cluster` is created, copy the following output variables, you can also obtain them by running
+`terraform output`:
+
+   - karpenter_irsa_role_arn
+   - karpenter_instance_profile_name
+
+3. To install the Helm Chart, **it is crucial** to configure these variables in your `values.yaml` file:
+
+   - `eks.amazonaws.com/role-arn`: takes the value of `karpenter_irsa_role_arn`.
+   - `defaultInstanceProfile`: takes the value of `karpenter_instance_profile_name`.
+   - `clusterName`.
+
+   A complete example of the `values.yaml` file:
+   ```
+   ingress-nginx:
+      enabled: false
+      controller:
+         config:
+            proxy-body-size: 100m
+   cert-manager:
+      enabled: false
+      # Set your email address here so auto-generated HTTPS certs will work:
+      email: "email@example.com"
+   elasticsearch:
+      enabled: false
+   metricsserver:
+      enabled: false
+   vpa:
+      enabled: false
+   opensearch:
+      enabled: false
+   karpenter:
+      enabled: true
+      serviceAccount:
+         annotations:
+            eks.amazonaws.com/role-arn: "<eks.amazonaws.com/role-arn VALUE>"
+      settings:
+         aws:
+            # -- Cluster name.
+            clusterName: "<YOUR-CLUSTER-NAME>"
+            # -- Cluster endpoint. If not set, will be discovered during startup (EKS only)
+            # From version 0.25.0, Karpenter helm chart allows the discovery of the cluster endpoint. More details in
+            # https://github.com/aws/karpenter/blob/main/website/content/en/docs/upgrade-guide.md#upgrading-to-v0250
+            # clusterEndpoint: "https://XYZ.eks.amazonaws.com"
+            # -- The default instance profile name to use when launching nodes
+            defaultInstanceProfile: "<karpenter_instance_profile_name VALUE>"
+   ```
+4. Now, install the Helm Chart using:
+
+   `<COMMAND HERE>`
+
+5. To test Karpenter, you can use this [example.](https://karpenter.sh/docs/getting-started/getting-started-with-karpenter/#first-use)
 
 
 <br><br><br>
