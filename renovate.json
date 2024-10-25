@@ -1,12 +1,6 @@
 {
     "branchPrefix": "renovate/",
-    "kubernetes": {
-      "fileMatch": [
-        "charts/**/Chart.yaml$"
-      ]
-    },
     "pinDigests": false,
     "prHourlyLimit": 20,
-    "enabledManagers": ["kubernetes", "kustomize"],
     "labels": ["global", "dependencies"]
 }
