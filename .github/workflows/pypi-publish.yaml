@@ -8,6 +8,7 @@ jobs:
 
   push:
     runs-on: ubuntu-latest
+    if: !startsWith(github.head_ref, 'harmony-chart')
     defaults:
       run:
         working-directory: ./tutor-contrib-harmony-plugin
