@@ -1,6 +1,6 @@
 # This service, which is always enabled, allows you to do basic health checks of your cluster and the Ingress Controller
 # Service by accessing /cluster-echo-test via HTTP on any hostname associated with your cluster.
-{{- if index .Values "ingress-nginx" "enabled" -}}
+{{- if index .Values "ingress-nginx" "enabled" }}
 apiVersion: v1
 kind: Service
 metadata:
