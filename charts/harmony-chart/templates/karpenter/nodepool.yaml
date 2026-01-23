@@ -1,0 +1,19 @@
+{{- if .Values.karpenter.enabled -}}
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: {{ .Values.karpenter.nodePool.name }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+spec:
+  template:
+    spec:
+      requirements:
+        {{- toYaml .Values.karpenter.nodePool.spec.template.spec.requirements | nindent 8 }}
+      nodeClassRef:
+        {{- toYaml .Values.karpenter.nodePool.spec.template.spec.nodeClassRef | nindent 8 }}
+  limits:
+    {{- toYaml .Values.karpenter.nodePool.spec.limits | nindent 4 }}
+  disruption:
+    {{- toYaml .Values.karpenter.nodePool.spec.disruption | nindent 4 }}
+{{- end }}

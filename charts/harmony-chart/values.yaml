@@ -19,20 +19,20 @@ cert-manager:
 
 # Configuration for the metrics server chart
 metricsserver:
-   # Control the chart inclusion
-   enabled: false
-   # See https://github.com/kubernetes-sigs/metrics-server/blob/master/charts/metrics-server/values.yaml
-   # for all available options
-   replicas: 1
+  # Control the chart inclusion
+  enabled: false
+  # See https://github.com/kubernetes-sigs/metrics-server/blob/master/charts/metrics-server/values.yaml
+  # for all available options
+  replicas: 1
 
 # Configuration for the Vertical Pod Autoscaler chart
 vpa:
-   # Control the chart inclusion
-   enabled: false
-   # See https://github.com/cowboysysop/charts/blob/master/charts/vertical-pod-autoscaler/values.yaml
-   # for all available options
-   admissionController:
-      replicaCount: 1
+  # Control the chart inclusion
+  enabled: false
+  # See https://github.com/cowboysysop/charts/blob/master/charts/vertical-pod-autoscaler/values.yaml
+  # for all available options
+  admissionController:
+    replicaCount: 1
 
 # Multi-tenant ElasticSearch
 elasticsearch:
@@ -201,42 +201,51 @@ karpenter:
   # ---------------------------------------------------------------------------
   # Provide sensible defaults for resource provisioning and lifecycle
   # ---------------------------------------------------------------------------
-  # Requirements for the provisioner API.
-  # More details in https://karpenter.sh/docs/concepts/provisioners/
-  provisioner:
+  # Requirements for the NodePool API (formerly Provisioner).
+  # More details in https://karpenter.sh/docs/concepts/nodepools/
+  nodePool:
     name: "default"
     spec:
-      requirements:
-        - key: karpenter.sh/capacity-type
-          operator: In
-          values: ["spot"]
-        # - key: node.kubernetes.io/instance-type
-        #   operator: In
-        #   values: ["t3.large", "t3.xlarge", "t3.2xlarge", "t2.xlarge", "t2.2xlarge"]
-        # - key: kubernetes.io/arch
-        #   operator: In
-        #   values: ["amd64"]
-      # The limits section controls the maximum amount of resources that the provisioner will manage.
-      # More details in https://karpenter.sh/docs/concepts/provisioners/#speclimitsresources
+      template:
+        spec:
+          requirements:
+            - key: karpenter.sh/capacity-type
+              operator: In
+              values: ["spot"]
+          nodeClassRef:
+            group: karpenter.k8s.aws
+            kind: EC2NodeClass
+            name: "default"
       limits:
-        resources:
-          cpu: "200"       # 50 nodes * 4 cpu
-          memory: "800Gi"  # 50 nodes * 16Gi
-      # TTL in seconds. If nil, the feature is disabled, nodes will never terminate
-      ttlSecondsUntilExpired: 2592000
-      # TTL in seconds. If nil, the feature is disabled, nodes will never scale down
-      # due to low utilization.
-      ttlSecondsAfterEmpty: 30
-  # Node template reference. More details in https://karpenter.sh/docs/concepts/node-templates/
-  nodeTemplate:
+        cpu: "200" # 50 nodes * 4 cpu
+        memory: "800Gi" # 50 nodes * 16Gi
+      disruption:
+        consolidationPolicy: WhenUnderutilized
+        budgets:
+          - nodes: "10%"
+
+  # EC2NodeClass configuration (formerly AWSNodeTemplate).
+  # More details in https://karpenter.sh/docs/concepts/nodeclasses/
+  ec2NodeClass:
     name: "default"
+    amiFamily: AL2
+    subnetSelectorTerms:
+      - tags:
+          karpenter.sh/discovery: "{{ .Values.karpenter.settings.aws.clusterName }}"
+    securityGroupSelectorTerms:
+      - tags:
+          karpenter.sh/discovery: "{{ .Values.karpenter.settings.aws.clusterName }}"
+    role: "KarpenterNodeRole-{{ .Values.karpenter.settings.aws.clusterName }}"
 
 # Prometheus stack
-#   
+#
+# IMPORTANT: Version 81.x+ moves CRDs to a separate chart `kube-prometheus-stack-crds`.
+# You must install/upgrade CRDs separately or include the CRD chart.
+#
 # If no storage is defined, the Prometheus and Grafana data is stored on
 # empheral storage. You can find more information about storages in the
 # Prometheus operator user guides: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/storage.md
-# 
+#
 # - To make Grafana persistent, you may want to set Grafana storage as shown in https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml#L999-L1009
 # - To set Prometheus storage, you can see the example storage spec at https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml#L3557-L3570
 prometheusstack:
@@ -279,9 +288,9 @@ prometheusstack:
       dashboardproviders.yaml:
         apiVersion: 1
         providers:
-          - name: 'default'
+          - name: "default"
             orgId: 1
-            folder: ''
+            folder: ""
             type: file
             disableDeletion: false
             editable: true
@@ -320,7 +329,7 @@ velero:
     backupStorageLocation:
       - name: "velero-backup-harmony"
         provider: aws
-        bucket: ""  # unique name of the bucket
+        bucket: "" # unique name of the bucket
         default: true
         config:
           s3Url: "" # the endpoint can be any S3 compatible storage
@@ -367,6 +376,8 @@ openfaas:
   enabled: false
 
 vector:
+  # CAUTION: Version 0.49.0 introduces VRL syntax changes.
+  # Verify your custom transforms, especially usage of `includes` vs `contains` or other functions.
   enabled: false
   role: "Agent"
   podDisruptionBudget: # Optional, but recommended
@@ -376,7 +387,7 @@ vector:
   podMonitor:
     enabled: false
   tolerations:
-  - operator: Exists
+    - operator: Exists
   logLevel: "info"
   customConfig:
     data_dir: /vector-data-dir
@@ -394,13 +405,12 @@ vector:
         extra_namespace_label_selector: app.kubernetes.io/managed-by!=tutor
 
     transforms:
-
       # Filter out application and global logs whose message is empty to prevent Vector process crash when sending logs to Cloudwatch
       # More details in https://github.com/vectordotdev/vector/issues/15539
       openedx_logs:
         type: remap
         inputs:
-        - kubernetes_tutor_logs
+          - kubernetes_tutor_logs
         source: |-
           if !includes(["lms", "cms", "cms-worker", "lms-worker", "lms-job", "cms-job"], .kubernetes.pod_labels."app.kubernetes.io/name"){
             abort
@@ -426,7 +436,7 @@ vector:
       operation_openedx_logs:
         type: remap
         inputs:
-        - kubernetes_tutor_logs
+          - kubernetes_tutor_logs
         source: |-
           if includes(["lms", "cms", "cms-worker", "lms-worker", "lms-job", "cms-job"], .kubernetes.pod_labels."app.kubernetes.io/name"){
             abort
@@ -442,7 +452,7 @@ vector:
       typed_global_logs:
         type: remap
         inputs:
-        - global_logs
+          - global_logs
         source: |-
           .type = "global"
         drop_on_error: true
@@ -452,9 +462,9 @@ vector:
       application_logs:
         type: remap
         inputs:
-        - grouped_openedx_logs
-        - operation_openedx_logs
-        - typed_global_logs
+          - grouped_openedx_logs
+          - operation_openedx_logs
+          - typed_global_logs
         source: |-
           if is_empty(string!(.message)) {
             log("Events with empty message are discarded", level: "info")
@@ -464,7 +474,7 @@ vector:
       tracking_logs:
         type: remap
         inputs:
-        - kubernetes_tutor_logs
+          - kubernetes_tutor_logs
         source: |-
           parsed, err_regex = parse_regex(.message, r'^.* \[tracking\] [^{}]* (?P<tracking_message>\{.*\})$')
           if err_regex != null {

@@ -1,0 +1,15 @@
+{{- if .Values.karpenter.enabled -}}
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: {{ .Values.karpenter.ec2NodeClass.name }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+spec:
+  amiFamily: {{ .Values.karpenter.ec2NodeClass.amiFamily }}
+  subnetSelectorTerms:
+    {{- toYaml .Values.karpenter.ec2NodeClass.subnetSelectorTerms | nindent 4 }}
+  securityGroupSelectorTerms:
+    {{- toYaml .Values.karpenter.ec2NodeClass.securityGroupSelectorTerms | nindent 4 }}
+  role: {{ tpl .Values.karpenter.ec2NodeClass.role . }}
+{{- end }}
