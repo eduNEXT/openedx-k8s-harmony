@@ -2,8 +2,8 @@ name: Release Charts
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - harmony-chart-*
 
 jobs:
   release:
@@ -11,6 +11,7 @@ jobs:
     # see: https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
     permissions:
       contents: write # to push chart release and create a release (helm/chart-releaser-action)
+      packages: write # to push OCI charts to GHCR
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,6 +28,35 @@ jobs:
         uses: azure/setup-helm@v3.5
         with:
           version: v3.12.3
+
+      - name: Validate chart tag version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          CHART_VERSION="${TAG#harmony-chart-}"
+          FILE_VERSION="$(helm show chart charts/harmony-chart | awk '/^version:/ { print $2 }')"
+
+          if [ "${CHART_VERSION}" != "${FILE_VERSION}" ]; then
+            echo "Tag version (${CHART_VERSION}) does not match Chart.yaml version (${FILE_VERSION})."
+            exit 1
+          fi
+
+          echo "CHART_VERSION=${CHART_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Package chart for OCI
+        run: |
+          helm dependency update charts/harmony-chart
+          mkdir -p .release-packages
+          helm package charts/harmony-chart --destination .release-packages
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Push chart to GHCR (OCI)
+        run: |
+          helm push \
+            ".release-packages/harmony-chart-${CHART_VERSION}.tgz" \
+            "oci://ghcr.io/${{ github.repository_owner }}/charts"
 
       # The OCI registries are bypassed since helm repo subcommands are not supported.
       # More details in https://helm.sh/docs/topics/registries/
