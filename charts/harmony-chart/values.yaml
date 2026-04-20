@@ -12,6 +12,9 @@ ingress-nginx:
   # Use ingress-nginx as a default controller.
   enabled: true
 
+traefik:
+  enabled: false
+
 cert-manager:
   # Use cert-manager as a default certificate controller.
   enabled: true
