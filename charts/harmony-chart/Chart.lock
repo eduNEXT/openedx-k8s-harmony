@@ -1,7 +1,4 @@
 dependencies:
-- name: ingress-nginx
-  repository: https://kubernetes.github.io/ingress-nginx
-  version: 4.15.1
 - name: traefik
   repository: oci://ghcr.io/traefik/helm
   version: 40.0.1
@@ -35,5 +32,5 @@ dependencies:
 - name: vector
   repository: https://helm.vector.dev
   version: 0.50.0
-digest: sha256:924fbea9d7fe0adb0eea843f690af91c83aeb6b2937c3ed93cd12536e8ad6253
-generated: "2026-05-12T14:21:48.81778687-04:00"
+digest: sha256:cd92f1453216e885840adba096256da5f18ae3bec6ac9126449524a3390bd734
+generated: "2026-07-22T16:53:39.981954863-04:00"
