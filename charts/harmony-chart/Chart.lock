@@ -19,7 +19,7 @@ dependencies:
   version: 2.13.3
 - name: karpenter
   repository: oci://public.ecr.aws/karpenter
-  version: 1.0.8
+  version: 1.14.1
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
   version: 81.0.1
@@ -32,5 +32,5 @@ dependencies:
 - name: vector
   repository: https://helm.vector.dev
   version: 0.50.0
-digest: sha256:ebf4e5f80295c5d3b6857f6149e7229117a9d4c0c59acf7cd7e06247b3fea7ed
-generated: "2026-08-05T15:29:46.676126308-04:00"
+digest: sha256:0ba8bf638f1af634f997ad192aabd6c4737cd54a8391b8ae2f7bfaab6e130296
+generated: "2026-09-09T16:16:28.514845443-04:00"
